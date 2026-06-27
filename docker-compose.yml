@@ -1,0 +1,22 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./stock-prediction-be
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./stock-prediction-be:/app  # mount source code for hot-reload
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:

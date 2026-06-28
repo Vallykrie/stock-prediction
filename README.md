@@ -13,7 +13,7 @@ Proyek ini tidak hanya mencakup pemodelan Machine Learning, tetapi juga dikemas 
 
 ```mermaid
 graph TD
-    User([👨‍💻 Penggunas]) -->|HTTP Port 3000| FE[🎨 Frontend Dashboard Next.js 16]
+    User([👨‍💻 Pengguna]) -->|HTTP Port 3000| FE[🎨 Frontend Dashboard Next.js 16]
     FE -->|REST API Port 8000| BE[⚡ Backend API FastAPI]
     BE <-->|Cache Hit / Miss| Redis[(🗄️ Redis Cache)]
     BE -->|Baca Hasil & Inferensi| ML[📊 ML Engine / Datasets]

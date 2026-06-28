@@ -6,6 +6,8 @@ Predictions are cached in Redis with a TTL that expires at midnight.
 """
 
 import logging
+import os
+import pandas as pd
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +34,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Next.js dev server
+        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -44,6 +47,54 @@ app.add_middleware(
 def health_check():
     """Health check for Docker / monitoring."""
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def get_metrics():
+    """Return evaluation metrics (RMSE, MAE, MAPE) for the models."""
+    csv_path = os.path.join(os.path.dirname(__file__), "..", "evaluation_metrics.csv")
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(os.path.dirname(__file__), "..", "stock-prediction-ml", "results", "evaluation_metrics.csv")
+    if not os.path.exists(csv_path):
+        csv_path = "evaluation_metrics.csv"
+    if not os.path.exists(csv_path):
+        raise HTTPException(status_code=404, detail="Metrics dataset not found.")
+    
+    df = pd.read_csv(csv_path)
+    metrics = []
+    for _, row in df.iterrows():
+        metrics.append({
+            "model": str(row["Model"]),
+            "rmse": round(float(row["RMSE"]), 2),
+            "mae": round(float(row["MAE"]), 2),
+            "mape": round(float(row["MAPE (%)"]), 4),
+        })
+    return metrics
+
+
+@app.get("/history")
+def get_history():
+    """Return historical actual vs predicted stock prices."""
+    csv_path = os.path.join(os.path.dirname(__file__), "..", "predictions_results.csv")
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(os.path.dirname(__file__), "..", "stock-prediction-ml", "results", "predictions_results.csv")
+    if not os.path.exists(csv_path):
+        csv_path = "predictions_results.csv"
+    if not os.path.exists(csv_path):
+        raise HTTPException(status_code=404, detail="History dataset not found.")
+    
+    df = pd.read_csv(csv_path)
+    # Return all history rows formatted cleanly
+    history = []
+    for _, row in df.iterrows():
+        history.append({
+            "date": str(row["Date"]),
+            "actual": round(float(row["Actual_IHSG"]), 2),
+            "hybrid_multivariat": round(float(row["Hybrid_Multivariat"]), 2),
+            "hybrid_univariat": round(float(row["Hybrid_Univariat"]), 2),
+            "lstm_standalone": round(float(row["LSTM_Tunggal"]), 2),
+        })
+    return history
 
 
 @app.get("/predict/{ticker}")
